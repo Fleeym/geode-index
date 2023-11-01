@@ -1,4 +1,9 @@
-import { BadRequestException, Injectable } from "@nestjs/common";
+import {
+    BadRequestException,
+    HttpStatus,
+    Injectable,
+    NotFoundException,
+} from "@nestjs/common";
 import { CreateModDto } from "./dto/create-mod.dto";
 import { FindManyOptions, Repository } from "typeorm";
 import { Mod } from "./entities/mod.entity";
@@ -60,23 +65,24 @@ export class ModsService {
         }
     }
 
-    async validate(id: string): Promise<Mod> {
+    async validate(id: string): Promise<void> {
         const mod = await this.modRepository.findOne({
             where: {
                 id: id,
             },
         });
         if (!mod) {
-            return null;
+            throw new NotFoundException(
+                this.responseService.createErrorResponse(HttpStatus.NOT_FOUND),
+            );
         }
 
         if (mod.validated === true) {
-            return mod;
+            return;
         }
 
         mod.validated = true;
         this.modRepository.save(mod);
-        return mod;
     }
 
     findAll(validated?: boolean): Promise<Mod[]> {

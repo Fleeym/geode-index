@@ -10,6 +10,7 @@ import { JwtModule } from "@nestjs/jwt";
 import { ConfigService } from "@nestjs/config";
 import { JwtStrategy } from "./strategies/jwt.strategy";
 import { RefreshJwtStrategy } from "./strategies/jwt-refresh.strategy";
+import { RoleGuard } from "./guards/role.guard";
 
 @Module({
     imports: [
@@ -19,6 +20,12 @@ import { RefreshJwtStrategy } from "./strategies/jwt-refresh.strategy";
         JwtModule.register({}),
     ],
     controllers: [AuthController],
-    providers: [GithubStrategy, AuthService, JwtStrategy, RefreshJwtStrategy],
+    providers: [
+        GithubStrategy,
+        AuthService,
+        JwtStrategy,
+        RefreshJwtStrategy,
+        RoleGuard,
+    ],
 })
 export class AuthModule {}

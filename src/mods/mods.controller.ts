@@ -9,11 +9,16 @@ import {
     Query,
     ParseBoolPipe,
     HttpStatus,
+    UseGuards,
 } from "@nestjs/common";
 import { ModsService } from "./mods.service";
 import { CreateModDto } from "./dto/create-mod.dto";
 import { ResponseService } from "src/response/response.service";
 import { EntityNotFoundError } from "typeorm";
+import { RoleGuard } from "src/auth/guards/role.guard";
+import { Role } from "src/auth/decorators/role.decorator";
+import { UserRole } from "src/user/entities/user.entity";
+import { AuthGuard } from "@nestjs/passport";
 
 @Controller({
     version: "1",
@@ -32,13 +37,10 @@ export class ModsController {
     }
 
     @Post("/validate/:id")
+    @Role(UserRole.ADMIN)
+    @UseGuards(AuthGuard("jwt"), RoleGuard)
     async validate(@Param("id") id: string) {
-        const result = await this.modsService.validate(id);
-        if (!result) {
-            throw new NotFoundException(
-                this.responseService.createErrorResponse(HttpStatus.NOT_FOUND),
-            );
-        }
+        await this.modsService.validate(id);
         return this.responseService.createResponse(null);
     }
 
