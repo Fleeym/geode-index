@@ -7,7 +7,8 @@ import { DatabaseModule } from "./database/database.module";
 import { ResponseModule } from "./response/response.module";
 import { UserModule } from "./user/user.module";
 import { AuthModule } from "./auth/auth.module";
-import { ProfileModule } from './profile/profile.module';
+import { ProfileModule } from "./profile/profile.module";
+import { ModReleaseModule } from './mod-release/mod-release.module';
 import config from "config/config";
 
 @Module({
@@ -22,6 +23,7 @@ import config from "config/config";
         UserModule,
         AuthModule,
         ProfileModule,
+        ModReleaseModule,
     ],
     controllers: [AppController],
     providers: [AppService],

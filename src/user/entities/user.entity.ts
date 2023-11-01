@@ -4,6 +4,8 @@ import {
     PrimaryGeneratedColumn,
     ManyToMany,
     JoinTable,
+    OneToMany,
+    JoinColumn,
 } from "typeorm";
 import { Mod } from "src/mods/entities/mod.entity";
 
@@ -36,14 +38,9 @@ export class User {
     })
     role: UserRole;
 
-    @Column({ nullable: true })
+    @Column({ nullable: true, select: false })
     refresh_token?: string;
 
-    @ManyToMany(() => Mod)
-    @JoinTable({
-        name: "mods_developers",
-        joinColumn: { name: "developer_id", referencedColumnName: "id" },
-        inverseJoinColumn: { name: "mod_id", referencedColumnName: "id" },
-    })
+    @OneToMany(() => Mod, (mods) => mods.developer)
     mods: Mod[];
 }

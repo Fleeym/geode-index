@@ -10,6 +10,8 @@ import {
     ParseBoolPipe,
     HttpStatus,
     UseGuards,
+    Res,
+    Req,
 } from "@nestjs/common";
 import { ModsService } from "./mods.service";
 import { CreateModDto } from "./dto/create-mod.dto";
@@ -19,6 +21,7 @@ import { RoleGuard } from "src/auth/guards/role.guard";
 import { Role } from "src/auth/decorators/role.decorator";
 import { UserRole } from "src/user/entities/user.entity";
 import { AuthGuard } from "@nestjs/passport";
+import { Request } from "express";
 
 @Controller({
     version: "1",
@@ -30,10 +33,11 @@ export class ModsController {
         private readonly responseService: ResponseService,
     ) {}
 
-    @Post("")
-    async create(@Body() createModDto: CreateModDto) {
-        const res = await this.modsService.create(createModDto);
-        return this.modsService.create(createModDto);
+    @Post()
+    @UseGuards(AuthGuard("jwt"))
+    async create(@Body() createModDto: CreateModDto, @Req() req: Request) {
+        await this.modsService.create(createModDto, req.user["sub"]);
+        return this.responseService.createResponse(null);
     }
 
     @Post("/validate/:id")
