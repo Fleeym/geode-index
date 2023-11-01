@@ -1,11 +1,17 @@
 import { HttpService } from "@nestjs/axios";
-import { Injectable, UnauthorizedException } from "@nestjs/common";
+import {
+    ForbiddenException,
+    HttpStatus,
+    Injectable,
+    UnauthorizedException,
+} from "@nestjs/common";
 import { ConfigService } from "@nestjs/config";
 import { JwtService } from "@nestjs/jwt";
 import { InjectRepository } from "@nestjs/typeorm";
 import { ResponseService } from "src/response/response.service";
 import { User, UserRole } from "src/user/entities/user.entity";
 import { Repository } from "typeorm";
+import * as argon2 from "argon2";
 
 @Injectable()
 export class AuthService {
@@ -18,8 +24,10 @@ export class AuthService {
         private readonly jwtService: JwtService,
     ) {}
 
-    async githubAuth(token: string): Promise<string> {
-        const response = await this.http.axiosRef.post<string>(
+    async githubAuth(
+        token: string,
+    ): Promise<{ token: string; refreshToken: string }> {
+        const response = await this.http.axiosRef.post(
             "https://github.com/login/oauth/access_token",
             {
                 client_id: this.configService.get<string>("github.client_id"),
@@ -30,17 +38,12 @@ export class AuthService {
             },
             {
                 headers: {
-                    "Content-Type": "application/json",
+                    Accept: "application/json",
                 },
             },
         );
-        const split = response.data.split("&");
-        let parsed: any = {};
-        split.forEach((kv: string) => {
-            const [key, value] = kv.split("=");
-            parsed[key] = value;
-        });
-        if (!parsed.access_token) {
+        const tokenResponse = response.data;
+        if (!tokenResponse.access_token) {
             throw new UnauthorizedException(
                 this.responseService.createResponse(
                     null,
@@ -53,7 +56,7 @@ export class AuthService {
             "https://api.github.com/user",
             {
                 headers: {
-                    Authorization: `Bearer ${parsed.access_token}`,
+                    Authorization: `Bearer ${tokenResponse.access_token}`,
                 },
             },
         );
@@ -65,7 +68,6 @@ export class AuthService {
                 ),
             );
         }
-        console.log(githubUser.data);
         const usernameLowercase = (
             githubUser.data.login as string
         ).toLowerCase();
@@ -84,11 +86,67 @@ export class AuthService {
             this.userRepository.save(user);
         }
 
-        const payload = {
-            sub: user.id,
-            role: user.role,
-        };
+        const tokens = await this.getTokens(user);
+        user.refresh_token = await argon2.hash(tokens.refreshToken);
+        this.userRepository.save(user);
+        return tokens;
+    }
 
-        return this.jwtService.sign(payload);
+    async refreshToken(userId: number, refreshToken: string) {
+        const user = await this.userRepository.findOne({
+            where: {
+                id: userId,
+            },
+        });
+        if (!user || !user.refresh_token) {
+            throw new ForbiddenException(
+                this.responseService.createErrorResponse(HttpStatus.FORBIDDEN),
+            );
+        }
+
+        const matches = await argon2.verify(user.refresh_token, refreshToken);
+        if (!matches) {
+            throw new ForbiddenException(
+                this.responseService.createErrorResponse(HttpStatus.FORBIDDEN),
+            );
+        }
+
+        const tokens = await this.getTokens(user);
+        user.refresh_token = await argon2.hash(tokens.refreshToken);
+        this.userRepository.save(user);
+        return tokens;
+    }
+
+    async getTokens(
+        user: User,
+    ): Promise<{ token: string; refreshToken: string }> {
+        const [token, refreshToken] = await Promise.all([
+            this.jwtService.signAsync(
+                {
+                    sub: user.id,
+                    role: user.role,
+                },
+                {
+                    secret: this.configService.get<string>("jwt_secret"),
+                    expiresIn: "1d",
+                },
+            ),
+            this.jwtService.signAsync(
+                {
+                    sub: user.id,
+                    role: user.role,
+                },
+                {
+                    secret: this.configService.get<string>(
+                        "jwt_refresh_secret",
+                    ),
+                    expiresIn: "7d",
+                },
+            ),
+        ]);
+        return {
+            token,
+            refreshToken,
+        };
     }
 }

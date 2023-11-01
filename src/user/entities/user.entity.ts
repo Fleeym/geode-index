@@ -36,6 +36,9 @@ export class User {
     })
     role: UserRole;
 
+    @Column({ nullable: true })
+    refresh_token?: string;
+
     @ManyToMany(() => Mod)
     @JoinTable({
         name: "mods_developers",

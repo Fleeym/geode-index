@@ -1,4 +1,3 @@
-import { HttpService } from "@nestjs/axios";
 import {
     Controller,
     Get,
@@ -7,9 +6,8 @@ import {
     UnauthorizedException,
     UseGuards,
 } from "@nestjs/common";
-import { ConfigService } from "@nestjs/config";
 import { AuthGuard } from "@nestjs/passport";
-import { Request } from "express";
+import { Request, Response } from "express";
 import { ResponseService } from "src/response/response.service";
 import { AuthService } from "./auth.service";
 
@@ -39,5 +37,17 @@ export class AuthController {
         }
         const jwt = await this.authService.githubAuth(token);
         return this.responseService.createResponse(jwt);
+    }
+
+    @Get("refresh")
+    @UseGuards(AuthGuard("jwt-refresh"))
+    async refreshToken(@Req() req: Request) {
+        const userId = req.user["sub"];
+        const refreshToken = req.user["refreshToken"];
+        const tokens = await this.authService.refreshToken(
+            userId,
+            refreshToken,
+        );
+        return this.responseService.createResponse(tokens);
     }
 }

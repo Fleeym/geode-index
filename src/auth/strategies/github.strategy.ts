@@ -19,7 +19,6 @@ export class GithubStrategy extends PassportStrategy(Strategy, "github") {
         profile: Profile,
     ) {
         // expected to return null on failed validations, use this for later
-        console.log(profile);
         return profile;
     }
 }
