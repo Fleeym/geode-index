@@ -73,7 +73,7 @@ export class AuthService {
         ).toLowerCase();
         let user = await this.userRepository.findOne({
             where: {
-                username: usernameLowercase,
+                github_user_id: githubUser.data.id,
             },
         });
         if (!user) {
