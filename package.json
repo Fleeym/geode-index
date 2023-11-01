@@ -18,7 +18,8 @@
     "test:cov": "jest --coverage",
     "test:debug": "node --inspect-brk -r tsconfig-paths/register -r ts-node/register node_modules/.bin/jest --runInBand",
     "test:e2e": "jest --config ./test/jest-e2e.json",
-    "db:sync": "typeorm schema:sync --dataSource ./dist/src/database/data-source.js"
+    "db:sync": "typeorm schema:sync --dataSource ./dist/src/database/data-source.js",
+    "scripts:admin-user": "node dist/src/scripts/user-to-admin.js"
   },
   "dependencies": {
     "@nestjs/axios": "^3.0.1",

@@ -14,7 +14,7 @@ export default new DataSource({
     username: config().database.username,
     password: config().database.password,
     database: config().database.database,
-    entities: [__dirname + "/**/*.entity.js"],
+    entities: [__dirname + "/../**/*.entity.js"],
     migrationsTableName: "migrations",
     synchronize: config().debug,
     extra: {
