@@ -2,8 +2,6 @@ import { Module } from "@nestjs/common";
 import { TypeOrmModule } from "@nestjs/typeorm";
 import { ConfigModule, ConfigService } from "@nestjs/config";
 
-console.log(__dirname + "/../../**/*.entity.ts");
-
 @Module({
     imports: [
         TypeOrmModule.forRootAsync({
@@ -18,6 +16,9 @@ console.log(__dirname + "/../../**/*.entity.ts");
                 entities: [__dirname + "/../../**/*.entity.js"],
                 migrationsTableName: "migrations",
                 synchronize: configService.get<boolean>("debug"),
+                extra: {
+                    charset: "utf8mb4_unicode_ci",
+                },
             }),
             inject: [ConfigService],
         }),

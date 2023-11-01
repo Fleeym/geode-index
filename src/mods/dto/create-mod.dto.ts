@@ -1,7 +1,6 @@
 export class CreateModDto {
     id: string;
-    major: number;
-    minor: number;
-    patch: number;
+    version: string;
     download_link: string;
+    repository?: string;
 }
