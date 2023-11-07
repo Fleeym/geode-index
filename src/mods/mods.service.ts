@@ -12,42 +12,20 @@ import * as semver from "semver";
 import { ResponseService } from "src/response/response.service";
 import { User } from "src/user/entities/user.entity";
 import { ModRelease } from "src/mod-release/entities/mod-release.entity";
-import { HttpService } from "@nestjs/axios";
-import {
-    createWriteStream,
-    mkdirSync,
-    readFileSync,
-    rmdirSync,
-    unlinkSync,
-} from "fs";
-import { createHash, randomUUID } from "crypto";
-import * as StreamZip from "node-stream-zip";
-
-type ParsedModInfo = {
-    id: string;
-    name: string;
-    description: string;
-    windows: boolean;
-    mac: boolean;
-    ios: boolean;
-    android: boolean;
-    tags: string[];
-    geodeVersion: string;
-    version: string;
-    repository?: string;
-};
+import { unlinkSync } from "fs";
+import { ModFileService } from "./mod-file.service";
 
 @Injectable()
 export class ModsService {
     constructor(
         @InjectRepository(Mod)
-        private modRepository: Repository<Mod>,
+        private readonly modRepository: Repository<Mod>,
         @InjectRepository(User)
-        private userRepository: Repository<User>,
+        private readonly userRepository: Repository<User>,
         @InjectRepository(ModRelease)
-        private modReleaseRepository: Repository<ModRelease>,
-        private responseService: ResponseService,
-        private http: HttpService,
+        private readonly modReleaseRepository: Repository<ModRelease>,
+        private readonly modFileService: ModFileService,
+        private readonly responseService: ResponseService,
     ) {}
 
     async create(createModDto: CreateModDto, developer_id: number) {
@@ -60,9 +38,11 @@ export class ModsService {
                 ),
             );
         }
-        const filename = await this.downloadFile(createModDto.download_link);
-        const { hash, hash256 } = await this.getHashes(filename);
-        const modData = await this.extractModData(filename);
+        const filename = await this.modFileService.downloadFile(
+            createModDto.download_link,
+        );
+        const hash = await this.modFileService.getHash(filename);
+        const modData = await this.modFileService.extractModData(filename);
         if (!semver.valid(modData.version)) {
             throw new BadRequestException(
                 this.responseService.createResponse(
@@ -94,7 +74,6 @@ export class ModsService {
         mod.version = modData.version;
         mod.latest_download_link = createModDto.download_link;
         mod.latest_hash = hash;
-        mod.latest_hash256 = hash256;
         mod.description = modData.description;
         mod.geode = modData.geodeVersion;
         mod.name = modData.name;
@@ -125,9 +104,70 @@ export class ModsService {
         });
         mod.developer = dev;
         unlinkSync(filename);
-        // await this.modRepository.save(mod);
-        // this.createFirstModRelease(mod);
-        console.log(mod);
+        await this.modRepository.save(mod);
+        this.createFirstModRelease(mod);
+    }
+
+    async update(createModDto: CreateModDto) {
+        if (!this.validateURL(createModDto.download_link)) {
+            throw new BadRequestException(
+                this.responseService.createResponse(
+                    null,
+                    "Invalid download link",
+                    false,
+                ),
+            );
+        }
+        const filename = await this.modFileService.downloadFile(
+            createModDto.download_link,
+        );
+        const hash = await this.modFileService.getHash(filename);
+        const modData = await this.modFileService.extractModData(filename);
+        const mod = await this.modRepository.findOne({
+            where: {
+                id: modData.id,
+            },
+        });
+
+        if (!mod) {
+            throw new NotFoundException(
+                this.responseService.createErrorResponse(HttpStatus.NOT_FOUND),
+            );
+        }
+        if (!mod.validated) {
+            throw new BadRequestException(
+                this.responseService.createResponse(
+                    null,
+                    "Cannot update a mod that isn't validated by an administrator",
+                    false,
+                ),
+            );
+        }
+
+        if (semver.compare(mod.version, modData.version) !== -1) {
+            throw new BadRequestException(
+                this.responseService.createResponse(
+                    null,
+                    "Mod version should be higher than the latest one",
+                    false,
+                ),
+            );
+        }
+
+        const release = await this.modFileService.createModReleaseFromLink(
+            modData,
+            hash,
+            createModDto.download_link,
+        );
+        release.mod = mod;
+        this.modReleaseRepository.save(release);
+
+        mod.version = modData.version;
+        mod.description = modData.description;
+        mod.name = modData.name;
+        mod.latest_hash = release.hash;
+        mod.latest_download_link = createModDto.download_link;
+        this.modRepository.save(mod);
     }
 
     validateURL(url: string): boolean {
@@ -139,91 +179,11 @@ export class ModsService {
         }
     }
 
-    async extractModData(filename: string): Promise<ParsedModInfo> {
-        const output = "/tmp/" + randomUUID();
-        mkdirSync(output);
-        const zip = new StreamZip.async({ file: filename });
-        const json = await zip.entryData("mod.json");
-        const jsonParsed = JSON.parse(json.toString());
-        console.log(jsonParsed);
-        let windows = false;
-        let mac = false;
-        let android = false;
-        let ios = false;
-        Object.values(await zip.entries()).forEach(
-            (entry: StreamZip.ZipEntry) => {
-                if (entry.name === `${jsonParsed["id"]}.dll`) {
-                    windows = true;
-                }
-                if (entry.name === `${jsonParsed["id"]}.dylib`) {
-                    mac = true;
-                }
-                if (entry.name === `${jsonParsed["id"]}.so`) {
-                    android = true;
-                }
-                if (entry.name === `${jsonParsed["id"]}.ios.dylib`) {
-                    ios = true;
-                }
-            },
-        );
-        rmdirSync(output);
-        const parsedInfo: ParsedModInfo = {
-            name: jsonParsed["name"],
-            description: jsonParsed["description"],
-            windows: windows,
-            mac: mac,
-            ios: ios,
-            android: android,
-            tags: jsonParsed["tags"] ?? [],
-            geodeVersion: jsonParsed["geode"],
-            repository: jsonParsed["repository"],
-            id: jsonParsed["id"],
-            version: jsonParsed["version"],
-        };
-        zip.close();
-        return parsedInfo;
-    }
-
-    async getHashes(
-        filename: string,
-    ): Promise<{ hash: string; hash256: string }> {
-        const buffer = readFileSync(filename);
-        const hash256 = createHash("sha256").update(buffer).digest("hex");
-        const hash3 = createHash("sha3-256").update(buffer).digest("hex");
-        return {
-            hash: hash3,
-            hash256: hash256,
-        };
-    }
-
-    private async downloadFile(url: string): Promise<string> {
-        const filepath = "/tmp/" + randomUUID();
-        const writer = createWriteStream(filepath);
-        const res = await this.http.axiosRef.get(url, {
-            responseType: "stream",
-        });
-        return new Promise((resolve, reject) => {
-            res.data.pipe(writer);
-            let error = null;
-            writer.on("error", (err) => {
-                error = err;
-                writer.close();
-                reject(error);
-                return;
-            });
-
-            writer.on("close", () => {
-                resolve(filepath);
-            });
-        });
-    }
-
     createFirstModRelease(mod: Mod) {
         const modRelease = new ModRelease();
         modRelease.mod = mod;
         modRelease.download_link = mod.latest_download_link;
         modRelease.hash = mod.latest_hash;
-        modRelease.hash256 = mod.latest_hash256;
         modRelease.version = mod.version;
         modRelease.android = mod.android;
         modRelease.windows = mod.windows;
@@ -271,6 +231,9 @@ export class ModsService {
         return this.modRepository.findOneOrFail({
             where: {
                 id: id,
+            },
+            relations: {
+                releases: true,
             },
         });
     }

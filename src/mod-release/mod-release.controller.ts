@@ -1,34 +1,59 @@
-import { Controller, Get, Post, Body, Patch, Param, Delete } from '@nestjs/common';
-import { ModReleaseService } from './mod-release.service';
-import { CreateModReleaseDto } from './dto/create-mod-release.dto';
-import { UpdateModReleaseDto } from './dto/update-mod-release.dto';
+import {
+    Controller,
+    Get,
+    Post,
+    Body,
+    Patch,
+    Param,
+    Delete,
+    NotFoundException,
+    HttpStatus,
+    UseGuards,
+} from "@nestjs/common";
+import { ModReleaseService } from "./mod-release.service";
+import { CreateModReleaseDto } from "./dto/create-mod-release.dto";
+import { ResponseService } from "src/response/response.service";
+import { Role } from "src/auth/decorators/role.decorator";
+import { UserRole } from "src/user/entities/user.entity";
+import { AuthGuard } from "@nestjs/passport";
+import { RoleGuard } from "src/auth/guards/role.guard";
 
-@Controller('mod-release')
+@Controller({
+    version: "1",
+    path: "mods",
+})
 export class ModReleaseController {
-  constructor(private readonly modReleaseService: ModReleaseService) {}
+    constructor(
+        private readonly modReleaseService: ModReleaseService,
+        private readonly responseService: ResponseService,
+    ) {}
 
-  @Post()
-  create(@Body() createModReleaseDto: CreateModReleaseDto) {
-    return this.modReleaseService.create(createModReleaseDto);
-  }
+    @Post(":id/versions")
+    create(@Body() createModReleaseDto: CreateModReleaseDto) {
+        return this.modReleaseService.create(createModReleaseDto);
+    }
 
-  @Get()
-  findAll() {
-    return this.modReleaseService.findAll();
-  }
+    @Get(":id")
+    findAll(@Param("id") modId: string) {
+        return this.modReleaseService.findAll(modId);
+    }
 
-  @Get(':id')
-  findOne(@Param('id') id: string) {
-    return this.modReleaseService.findOne(+id);
-  }
+    @Get(":id/:version")
+    async findOne(@Param("id") id: string, @Param("version") version: string) {
+        const release = await this.modReleaseService.findOne(id, version);
+        if (!release) {
+            throw new NotFoundException(
+                this.responseService.createErrorResponse(HttpStatus.NOT_FOUND),
+            );
+        }
 
-  @Patch(':id')
-  update(@Param('id') id: string, @Body() updateModReleaseDto: UpdateModReleaseDto) {
-    return this.modReleaseService.update(+id, updateModReleaseDto);
-  }
+        return release;
+    }
 
-  @Delete(':id')
-  remove(@Param('id') id: string) {
-    return this.modReleaseService.remove(+id);
-  }
+    @Role(UserRole.ADMIN)
+    @UseGuards(AuthGuard("jwt"), RoleGuard)
+    @Delete(":id/:version")
+    remove(@Param("id") id: string, @Param("version") version: string) {
+        return this.modReleaseService.remove(id, version);
+    }
 }

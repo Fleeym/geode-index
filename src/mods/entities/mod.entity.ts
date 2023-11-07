@@ -43,9 +43,6 @@ export class Mod {
     @Column("varchar", { length: 255 })
     latest_hash: string;
 
-    @Column("varchar", { length: 255 })
-    latest_hash256: string;
-
     @Column("varchar", { length: 255, nullable: true })
     repository: string;
 

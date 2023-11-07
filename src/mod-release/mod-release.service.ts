@@ -1,26 +1,76 @@
-import { Injectable } from '@nestjs/common';
-import { CreateModReleaseDto } from './dto/create-mod-release.dto';
-import { UpdateModReleaseDto } from './dto/update-mod-release.dto';
+import { HttpStatus, Injectable, NotFoundException } from "@nestjs/common";
+import { CreateModReleaseDto } from "./dto/create-mod-release.dto";
+import { InjectRepository } from "@nestjs/typeorm";
+import { Mod } from "src/mods/entities/mod.entity";
+import { Repository } from "typeorm";
+import { ResponseService } from "src/response/response.service";
+import { ModRelease } from "./entities/mod-release.entity";
 
 @Injectable()
 export class ModReleaseService {
-  create(createModReleaseDto: CreateModReleaseDto) {
-    return 'This action adds a new modRelease';
-  }
+    constructor(
+        @InjectRepository(Mod) private readonly modRepository: Repository<Mod>,
+        @InjectRepository(ModRelease)
+        private readonly modReleaseRepository: Repository<ModRelease>,
+        private readonly responseService: ResponseService,
+    ) {}
+    create(createModReleaseDto: CreateModReleaseDto) {
+        return "This action adds a new modRelease";
+    }
 
-  findAll() {
-    return `This action returns all modRelease`;
-  }
+    async findAll(modId: string) {
+        const mod = await this.modRepository.findOne({
+            where: {
+                id: modId,
+            },
+        });
+        if (!mod) {
+            throw new NotFoundException(
+                this.responseService.createErrorResponse(HttpStatus.NOT_FOUND),
+            );
+        }
 
-  findOne(id: number) {
-    return `This action returns a #${id} modRelease`;
-  }
+        return await this.modReleaseRepository
+            .createQueryBuilder("r")
+            .where("r.mod_id = :id", { id: mod.id })
+            .getMany();
+    }
 
-  update(id: number, updateModReleaseDto: UpdateModReleaseDto) {
-    return `This action updates a #${id} modRelease`;
-  }
+    async findOne(modId: string, version: string) {
+        const mod = await this.modRepository.findOne({
+            where: {
+                id: modId,
+            },
+        });
+        if (!mod) {
+            throw new NotFoundException(
+                this.responseService.createErrorResponse(HttpStatus.NOT_FOUND),
+            );
+        }
 
-  remove(id: number) {
-    return `This action removes a #${id} modRelease`;
-  }
+        return await this.modReleaseRepository
+            .createQueryBuilder("r")
+            .where("r.mod_id = :id", { id: mod.id })
+            .andWhere("r.version = :version", { version: version })
+            .getOne();
+    }
+
+    async remove(id: string, version: string) {
+        const mod = await this.modRepository.findOne({
+            where: {
+                id: id,
+            },
+        });
+        if (!mod) {
+            throw new NotFoundException(
+                this.responseService.createErrorResponse(HttpStatus.NOT_FOUND),
+            );
+        }
+        await this.modReleaseRepository
+            .createQueryBuilder("r")
+            .delete()
+            .where("r.mod_id = :id", { id: id })
+            .andWhere("r.version = :version", { version: version })
+            .execute();
+    }
 }

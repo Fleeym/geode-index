@@ -12,6 +12,9 @@ import {
     UseGuards,
     Res,
     Req,
+    Patch,
+    HttpException,
+    InternalServerErrorException,
 } from "@nestjs/common";
 import { ModsService } from "./mods.service";
 import { CreateModDto } from "./dto/create-mod.dto";
@@ -72,6 +75,11 @@ export class ModsController {
                 );
             }
         }
+    }
+
+    @Patch()
+    async update(@Body() createModDto: CreateModDto) {
+        await this.modsService.update(createModDto);
     }
 
     @Delete(":id")

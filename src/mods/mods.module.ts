@@ -7,6 +7,7 @@ import { ResponseModule } from "src/response/response.module";
 import { User } from "src/user/entities/user.entity";
 import { ModRelease } from "src/mod-release/entities/mod-release.entity";
 import { HttpModule } from "@nestjs/axios";
+import { ModFileService } from "./mod-file.service";
 
 @Module({
     controllers: [ModsController],
@@ -15,6 +16,7 @@ import { HttpModule } from "@nestjs/axios";
         ResponseModule,
         HttpModule,
     ],
-    providers: [ModsService],
+    providers: [ModsService, ModFileService],
+    exports: [ModFileService],
 })
 export class ModsModule {}

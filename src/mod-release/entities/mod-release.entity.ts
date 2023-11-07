@@ -21,9 +21,6 @@ export class ModRelease {
     @Column("varchar", { length: 255 })
     hash: string;
 
-    @Column("varchar", { length: 255 })
-    hash256: string;
-
     @Column("varchar", { length: 65 })
     geode: string;
 

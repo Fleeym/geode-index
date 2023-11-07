@@ -7,7 +7,7 @@ import {
     UseGuards,
 } from "@nestjs/common";
 import { AuthGuard } from "@nestjs/passport";
-import { Request, Response } from "express";
+import { Request } from "express";
 import { ResponseService } from "src/response/response.service";
 import { AuthService } from "./auth.service";
 
