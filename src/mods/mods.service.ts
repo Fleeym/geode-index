@@ -14,6 +14,8 @@ import { User } from "src/user/entities/user.entity";
 import { ModRelease } from "src/mod-release/entities/mod-release.entity";
 import { unlinkSync } from "fs";
 import { ModFileService } from "./mod-file.service";
+import { PaginatorService } from "src/paginator/paginator.service";
+import { PaginatedData } from "src/types/paginated";
 
 @Injectable()
 export class ModsService {
@@ -26,6 +28,7 @@ export class ModsService {
         private readonly modReleaseRepository: Repository<ModRelease>,
         private readonly modFileService: ModFileService,
         private readonly responseService: ResponseService,
+        private readonly paginatorService: PaginatorService,
     ) {}
 
     async create(createModDto: CreateModDto, developer_id: number) {
@@ -213,29 +216,41 @@ export class ModsService {
         this.modRepository.save(mod);
     }
 
-    findAll(validated?: boolean): Promise<Mod[]> {
+    async findAll(validated?: boolean): Promise<PaginatedData<Mod>> {
         const options: FindManyOptions<Mod> = {
             relations: {
                 developer: true,
             },
         };
+        const builder = this.modRepository
+            .createQueryBuilder("mod")
+            .leftJoinAndSelect("mod.developer", "dev")
+            .leftJoinAndSelect("mod.releases", "release")
+            .orderBy("release.version", "DESC");
         if (validated !== undefined) {
-            options.where = {
+            builder.where("mod.validated = :validated", {
                 validated: validated,
-            };
+            });
         }
-        return this.modRepository.find(options);
+
+        return await this.paginatorService.paginate(builder, 1, 10);
     }
 
-    findOne(id: string): Promise<Mod> {
-        return this.modRepository.findOneOrFail({
+    async findOne(id: string): Promise<Mod> {
+        const data = await this.modRepository.findOne({
             where: {
                 id: id,
             },
             relations: {
+                developer: true,
                 releases: true,
             },
         });
+        if (!data) {
+            throw new NotFoundException();
+        }
+
+        return data;
     }
 
     remove(id: number) {

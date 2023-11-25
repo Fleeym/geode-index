@@ -6,6 +6,9 @@ This is a personal draft of what a proper API would look like for the Geode Inde
 
  * Dependencies
  * API Mods
+ * Pagination for mods
+ * Filtering for mods
+ * fuzzy finding sadface
 
 ## Cool stuff for the future
 

@@ -19,7 +19,7 @@ export class User {
     @PrimaryGeneratedColumn()
     id: number;
 
-    @Column()
+    @Column({ select: false })
     github_user_id: number;
 
     @Column("varchar", { length: 30, unique: true })

@@ -8,6 +8,7 @@ import { User } from "src/user/entities/user.entity";
 import { ModRelease } from "src/mod-release/entities/mod-release.entity";
 import { HttpModule } from "@nestjs/axios";
 import { ModFileService } from "./mod-file.service";
+import { PaginatorModule } from "src/paginator/paginator.module";
 
 @Module({
     controllers: [ModsController],
@@ -15,6 +16,7 @@ import { ModFileService } from "./mod-file.service";
         TypeOrmModule.forFeature([Mod, User, ModRelease]),
         ResponseModule,
         HttpModule,
+        PaginatorModule,
     ],
     providers: [ModsService, ModFileService],
     exports: [ModFileService],

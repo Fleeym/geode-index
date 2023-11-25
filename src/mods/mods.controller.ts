@@ -65,7 +65,7 @@ export class ModsController {
     async findOne(@Param("id") id: string) {
         try {
             const resource = await this.modsService.findOne(id);
-            return resource;
+            return this.responseService.createResponse(resource);
         } catch (e) {
             if (e instanceof EntityNotFoundError) {
                 throw new NotFoundException(
