@@ -12,6 +12,7 @@ import {
     OneToOne,
     PrimaryColumn,
 } from "typeorm";
+import { Dependency } from "./dependency.entity";
 
 @Entity("mods")
 export class Mod {

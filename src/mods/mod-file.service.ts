@@ -27,7 +27,6 @@ export class ModFileService {
         const zip = new StreamZip.async({ file: filename });
         const json = await zip.entryData("mod.json");
         const jsonParsed = JSON.parse(json.toString());
-        console.log(jsonParsed);
         let windows = false;
         let mac = false;
         let android = false;

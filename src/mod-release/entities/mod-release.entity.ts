@@ -5,7 +5,9 @@ import {
     JoinColumn,
     ManyToOne,
     PrimaryGeneratedColumn,
+    OneToMany,
 } from "typeorm";
+import { Dependency } from "src/mods/entities/dependency.entity";
 
 @Entity("mod_releases")
 export class ModRelease {
@@ -39,4 +41,10 @@ export class ModRelease {
     @ManyToOne(() => Mod, (mod) => mod.releases)
     @JoinColumn({ name: "mod_id", referencedColumnName: "id" })
     mod: Mod;
+
+    @OneToMany(() => Dependency, (dep) => dep.dependent)
+    dependencies: Dependency[];
+
+    @OneToMany(() => Dependency, (dep) => dep.dependency)
+    dependents: Dependency[];
 }

@@ -226,7 +226,15 @@ export class ModsService {
             .createQueryBuilder("mod")
             .leftJoinAndSelect("mod.developer", "dev")
             .leftJoinAndSelect("mod.releases", "release")
-            .orderBy("release.version", "DESC");
+            .leftJoinAndSelect("release.dependents", "dependent")
+            .leftJoinAndSelect("dependent.dependent", "dependent_release")
+            .leftJoinAndSelect("dependent_release.mod", "dependent_mod")
+            .leftJoinAndSelect("release.dependencies", "dependency")
+            .leftJoinAndSelect("dependency.dependency", "dependency_release")
+            .leftJoinAndSelect("dependency_release.mod", "dependency_mod")
+            .addOrderBy("mod.id", "ASC")
+            .addOrderBy("release.version", "DESC");
+
         if (validated !== undefined) {
             builder.where("mod.validated = :validated", {
                 validated: validated,
