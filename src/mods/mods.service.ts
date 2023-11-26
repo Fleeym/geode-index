@@ -232,6 +232,17 @@ export class ModsService {
             .leftJoinAndSelect("release.dependencies", "dependency")
             .leftJoinAndSelect("dependency.dependency", "dependency_release")
             .leftJoinAndSelect("dependency_release.mod", "dependency_mod")
+            .select([
+                "mod",
+                "release",
+                "dependent.importance",
+                "dependent_release",
+                "dependent_mod",
+                "dependency.compare",
+                "dependency.importance",
+                "dependency_release",
+                "dependency_mod",
+            ])
             .addOrderBy("mod.id", "ASC")
             .addOrderBy("release.version", "DESC");
 

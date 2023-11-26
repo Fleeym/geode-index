@@ -11,7 +11,7 @@ import { Dependency } from "src/mods/entities/dependency.entity";
 
 @Entity("mod_releases")
 export class ModRelease {
-    @PrimaryGeneratedColumn()
+    @Column({ select: false, primary: true, generated: true })
     id: number;
 
     @Column("varchar", { length: 65 })
