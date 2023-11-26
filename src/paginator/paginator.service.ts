@@ -15,7 +15,7 @@ export class PaginatorService {
         return {
             data: data,
             count: count,
-            totalPages: Math.floor(count / perPage + 1),
+            totalPages: Math.ceil(count / perPage),
         };
     }
 }

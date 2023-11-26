@@ -216,7 +216,11 @@ export class ModsService {
         this.modRepository.save(mod);
     }
 
-    async findAll(validated?: boolean): Promise<PaginatedData<Mod>> {
+    async findAll(
+        validated?: boolean,
+        page: number = 1,
+        perPage: number = 10,
+    ): Promise<PaginatedData<Mod>> {
         const options: FindManyOptions<Mod> = {
             relations: {
                 developer: true,
@@ -252,7 +256,7 @@ export class ModsService {
             });
         }
 
-        return await this.paginatorService.paginate(builder, 1, 10);
+        return await this.paginatorService.paginate(builder, page, perPage);
     }
 
     async findOne(id: string): Promise<Mod> {

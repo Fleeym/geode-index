@@ -56,6 +56,7 @@ export class ModFileService {
             ios: ios,
             android: android,
             tags: jsonParsed["tags"] ?? [],
+            dependencies: jsonParsed["dependencies"] ?? [],
             geodeVersion: jsonParsed["geode"],
             repository: jsonParsed["repository"],
             id: jsonParsed["id"],

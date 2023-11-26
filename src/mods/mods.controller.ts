@@ -10,11 +10,9 @@ import {
     ParseBoolPipe,
     HttpStatus,
     UseGuards,
-    Res,
     Req,
     Patch,
-    HttpException,
-    InternalServerErrorException,
+    ParseIntPipe,
 } from "@nestjs/common";
 import { ModsService } from "./mods.service";
 import { CreateModDto } from "./dto/create-mod.dto";
@@ -53,11 +51,15 @@ export class ModsController {
 
     @Get()
     async findAll(
+        @Query("page", new ParseIntPipe({ optional: true }))
+        page: number = 1,
+        @Query("perPage", new ParseIntPipe({ optional: true }))
+        perPage: number = 10,
         @Query("validated", new ParseBoolPipe({ optional: true }))
         validated?: boolean,
     ) {
         return this.responseService.createResponse(
-            await this.modsService.findAll(validated),
+            await this.modsService.findAll(validated, page, perPage),
         );
     }
 

@@ -4,10 +4,10 @@ This is a personal draft of what a proper API would look like for the Geode Inde
 
 ## Checklist for parity with current index
 
- * Dependencies
+ * Dependencies (done)
  * Incompatibilities
  * API Mods
- * Pagination for mods
+ * Pagination for mods (done)
  * Filtering for mods
  * fuzzy finding sadface
 
