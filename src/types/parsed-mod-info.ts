@@ -8,8 +8,12 @@ export class ParsedModInfo {
     android: boolean;
     tags: string[];
     geodeVersion: string;
-    dependencies: Array<{ id: string; version: string; required: boolean }> =
-        [];
+    dependencies: Array<{
+        id: string;
+        version: string;
+        required?: boolean;
+        importance?: string;
+    }> = [];
     version: string;
     repository?: string;
 }
